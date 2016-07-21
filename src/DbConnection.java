@@ -16,12 +16,17 @@ public class DbConnection {
             e.printStackTrace();
         }
     }
+    public void close(){
+        try {
+            con.close();
+        }catch (Exception e){}
+    }
     public boolean registerNewUser(String user,String password){
         String sql="INSERT INTO USER_INFO (ID,NAME,PASSWORD)"+
                 "VALUES('"+user+"','default','"+password+"');";
         System.out.println(sql);
         System.out.println(con);
-        try(Statement stmt=con.createStatement();){
+        try(Statement stmt=con.createStatement()){
             stmt.executeUpdate(sql);
         }catch (Exception e){
             e.printStackTrace();
