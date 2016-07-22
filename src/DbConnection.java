@@ -1,5 +1,6 @@
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.Statement;
 
 public class DbConnection {
@@ -22,16 +23,32 @@ public class DbConnection {
         }catch (Exception e){}
     }
     public boolean registerNewUser(String user,String password){
-        String sql="INSERT INTO USER_INFO (ID,NAME,PASSWORD)"+
-                "VALUES('"+user+"','default','"+password+"');";
-        System.out.println(sql);
-        System.out.println(con);
+        String query="SELECT ID FROM USER_INFO WHERE ID='"+user+"'";
+        String insert="INSERT INTO USER_INFO (ID,PASSWORD)"+
+                "VALUES('"+user+"','"+password+"');";
+        ResultSet rs=null;
+//        System.out.println(sql);
+//        System.out.println(con);
         try(Statement stmt=con.createStatement()){
-            stmt.executeUpdate(sql);
+            rs=stmt.executeQuery(query);
+            if(rs.next()) {
+                System.out.println("exsited!");
+                return false;
+            }
+            stmt.executeUpdate(insert);
         }catch (Exception e){
             e.printStackTrace();
             return false;
         }
         return true;
+    }
+    public boolean login(String user, String password){
+        String sql="SELECT * FROM USER_INFO WHERE ID='"+user+
+                "' AND PASSWORD='"+password+"'";
+        try(Statement stmt=con.createStatement()){
+            ResultSet rs=stmt.executeQuery(sql);
+            if(rs.next())return true;
+        }catch (Exception e){e.printStackTrace();}
+        return false;
     }
 }

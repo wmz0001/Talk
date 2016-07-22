@@ -8,7 +8,7 @@ public class Client {
         int port=5026;
         try(Socket socket=new Socket(host,port)){
             Writer out=new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-            out.write("registerNewUser\r\n");
+            out.write("login\r\n");
             out.write("wmz0001\r\n");
             out.write("enter1206\r\n");
             out.flush();

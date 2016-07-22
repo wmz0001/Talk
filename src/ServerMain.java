@@ -12,11 +12,18 @@ public class ServerMain {
 
         while(canceled&&cin.hasNext()){
             String str=cin.nextLine().trim();
-            System.out.println(str);
             switch (str){
                 case "quit":{
                     System.out.println("Bye!");
                     canceled=false;
+                    break;
+                }
+                case "num":{
+                    System.out.println(server.getOnlineNum());
+                    break;
+                }
+                case "users":{
+                    System.out.println(server.getOnlineUser());
                     break;
                 }
             }
