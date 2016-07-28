@@ -10,7 +10,6 @@ public class ServerMain {
         server.start();
         Scanner cin= new Scanner(System.in);
 
-
         while(canceled&&cin.hasNext()){
             String str=cin.nextLine().trim();
             switch (str){

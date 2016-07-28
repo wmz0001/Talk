@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.concurrent.Callable;
 
 public class ServerThread implements Callable<Void> {
+    private int threadId;
     private Socket socket;
     private ServerStart serverStart;
     private DbConnection dbConn = null;
@@ -24,6 +25,12 @@ public class ServerThread implements Callable<Void> {
         }
     }
 
+    public void sendInfo(String data){
+        try{
+            out.write(data);
+            out.flush();
+        }catch (Exception e){}
+    }
     public Void call() {
         try {
             while (true) {
@@ -42,10 +49,12 @@ public class ServerThread implements Callable<Void> {
                         logout();
                         break;
                     }
+                    default:serverStart.sendAll(str);
                 }
             }
         } catch (IOException e) {
         } finally {
+            logout();
             dbConn.close();
         }
         return null;
@@ -75,9 +84,10 @@ public class ServerThread implements Callable<Void> {
             System.out.println("login " + res);
             if(res){
                 logState=true;
-                user=new String(userName);
+                user=userName;
                 String date=new Date().toString();
                 serverStart.login(userName,date);
+                threadId=serverStart.getOnlineNum();
             }
         }catch (Exception e){e.printStackTrace();}
     }
