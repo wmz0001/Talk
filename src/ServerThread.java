@@ -49,7 +49,10 @@ public class ServerThread implements Callable<Void> {
                         logout();
                         break;
                     }
-                    default:serverStart.sendAll(str);
+                    default:{
+                        System.out.println(threadId+'\t'+user+socket+str);
+                        serverStart.sendAll(str+"\r\n");
+                    }
                 }
             }
         } catch (IOException e) {

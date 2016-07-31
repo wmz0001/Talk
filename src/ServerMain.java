@@ -14,7 +14,6 @@ public class ServerMain {
             String str=cin.nextLine().trim();
             switch (str){
                 case "quit":{
-                    System.out.println("Bye!");
                     canceled=false;
                     break;
                 }
@@ -29,6 +28,7 @@ public class ServerMain {
             }
         }
         TimeUnit.SECONDS.sleep(1);
+        System.out.println("Bye!");
         System.exit(0);
     }
 }

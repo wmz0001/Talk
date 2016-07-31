@@ -30,7 +30,7 @@ public class ServerStart extends Thread {
         onlineNum--;
         map.remove(name);
     }
-    public void sendAll(String data){
+    public synchronized void sendAll(String data){
         for(ServerThread serverThread :list)
             serverThread.sendInfo(data);
     }
