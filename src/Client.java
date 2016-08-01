@@ -14,22 +14,25 @@ public class Client implements Runnable {
     private String password = "enter1206";
     Writer out;
     BufferedReader in;
-    Thread thread;
+
     public void run() {
         try (Socket socket = new Socket(host, port)) {
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-            thread = new Thread() {
+            Thread thread=new Thread() {
                 public void run() {
                     try {
                         while (true) {
-                            System.out.println("window " + id + ":" + in.readLine());
+                            String str = in.readLine();           //readLine returns null if the stream is end
+                            if (str == null) break;
+                            //System.out.println("window " + id + ":" + str);
                         }
                     } catch (Exception e) {
-                        e.printStackTrace();
                     }
+                    System.out.println("exiting read thread "+id);
                 }
             };
+            thread.setDaemon(true);
             thread.start();
             login(name, password);
             while (true) {
@@ -38,8 +41,9 @@ public class Client implements Runnable {
                 TimeUnit.SECONDS.sleep(1);
             }
         } catch (Exception e) {
-            e.printStackTrace();
         }
+        System.out.println("exit write "+id);
+        //System.exit(0);         //the thread cannot stop without this sentence.
     }
 
     public Client(String name) {
@@ -59,14 +63,15 @@ public class Client implements Runnable {
     }
 
     public static void main(String arg[]) {
-        int N = 1;
+        int N = 150;
         ExecutorService pool = Executors.newFixedThreadPool(N);
         for (int i = 0; i < N; i++) {
             String str;
             if ((i & 1) == 1)
                 str = "wmz";
             else str = "wmz0001";
-            pool.submit(new Client(str));
+            pool.execute(new Client(str));
         }
+        System.out.println("exit main");
     }
 }

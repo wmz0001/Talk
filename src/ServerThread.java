@@ -3,17 +3,18 @@ import java.net.Socket;
 import java.util.Date;
 import java.util.concurrent.Callable;
 
-public class ServerThread implements Callable<Void> {
+public class ServerThread implements Runnable {
     private int threadId;
     private Socket socket;
     private ServerStart serverStart;
     private DbConnection dbConn = null;
     private BufferedReader in = null;
     private Writer out = null;
-    private String user=null;
-    private boolean logState=false;
-    public ServerThread(Socket socket,ServerStart serverStart) {
-        this.serverStart=serverStart;
+    private String user = null;
+    private boolean logState = false;
+
+    public ServerThread(Socket socket, ServerStart serverStart) {
+        this.serverStart = serverStart;
         this.socket = socket;
         dbConn = new DbConnection();
         try {
@@ -25,13 +26,15 @@ public class ServerThread implements Callable<Void> {
         }
     }
 
-    public void sendInfo(String data){
-        try{
+    public void sendInfo(String data) {
+        try {
             out.write(data);
             out.flush();
-        }catch (Exception e){}
+        } catch (Exception e) {
+        }
     }
-    public Void call() {
+
+    public void run() {
         try {
             while (true) {
                 String str = in.readLine();
@@ -41,17 +44,17 @@ public class ServerThread implements Callable<Void> {
                         registerNewUser();
                         break;
                     }
-                    case "login":{
+                    case "login": {
                         login();
                         break;
                     }
-                    case "logout":{
+                    case "logout": {
                         logout();
                         break;
                     }
-                    default:{
-                        System.out.println(threadId+'\t'+user+socket+str);
-                        serverStart.sendAll(str+"\r\n");
+                    default: {
+                        //System.out.println(threadId+'\t'+user+socket+str);
+                        serverStart.sendAll(str + "\r\n");
                     }
                 }
             }
@@ -59,12 +62,12 @@ public class ServerThread implements Callable<Void> {
         } finally {
             logout();
             dbConn.close();
+            System.out.println("exit thread" + threadId);
         }
-        return null;
     }
 
     private void registerNewUser() {
-        boolean res=false;
+        boolean res = false;
         try {
             String userName = in.readLine();
             String passWord = in.readLine();
@@ -73,29 +76,33 @@ public class ServerThread implements Callable<Void> {
             out.flush();
             System.out.println("REGISTER " + res);
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println(e);
         }
     }
-    private void login(){
-        boolean res=false;
+
+    private void login() {
+        boolean res = false;
         try {
             String userName = in.readLine();
             String passWord = in.readLine();
             res = dbConn.login(userName, passWord);
             out.write(res + " login\r\n");
             out.flush();
-            System.out.println("login " + res);
-            if(res){
-                logState=true;
-                user=userName;
-                String date=new Date().toString();
-                serverStart.login(userName,date);
-                threadId=serverStart.getOnlineNum();
+            if (res) {
+                logState = true;
+                user = userName;
+                String date = new Date().toString();
+                serverStart.login(userName, date);
+                threadId = serverStart.getOnlineNum();
+                System.out.println("login " + threadId);
             }
-        }catch (Exception e){e.printStackTrace();}
+        } catch (Exception e) {
+            System.out.println(e);
+        }
     }
-    private void logout(){
-        logState=false;
+
+    private void logout() {
+        logState = false;
         serverStart.logout(user);
     }
 }

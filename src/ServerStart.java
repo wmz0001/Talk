@@ -12,50 +12,64 @@ import java.util.concurrent.TimeUnit;
 
 public class ServerStart extends Thread {
     private int port;
-    private int onlineNum=0;
-    private List<ServerThread> list=new ArrayList<>();
-    private Map<String,String> map =new HashMap<>();
+    private int onlineNum = 0;
+
+    private List<ServerThread> list = new ArrayList<>();
+    private Map<String, String> map = new HashMap<>();
+
     public ServerStart(int port) {
         this.port = port;
     }
-    public int getOnlineNum(){
+
+    public int getOnlineNum() {
         return onlineNum;
     }
-    public Map<String,String> getOnlineUser(){return map;}
-    public synchronized void login(String name,String date){
-        onlineNum++;
-        map.put(name,date);
+
+    public Map<String, String> getOnlineUser() {
+        return map;
     }
-    public synchronized void logout(String name){
+
+    public synchronized void login(String name, String date) {
+        onlineNum++;
+        map.put(name, date);
+    }
+
+    public synchronized void logout(String name) {
         onlineNum--;
         map.remove(name);
     }
-    public synchronized void sendAll(String data){
-        for(ServerThread serverThread :list)
+
+    public synchronized void sendAll(String data) {
+        for (ServerThread serverThread : list)
             serverThread.sendInfo(data);
     }
+
     public void run() {
-        ExecutorService pool= Executors.newCachedThreadPool();
+        ExecutorService pool = Executors.newCachedThreadPool();
         try (ServerSocket server = new ServerSocket(port)) {
-            while (ServerMain.isCanceled()) {
+            while (true) {
                 try {
-                    Socket connection = server.accept();
-                    ServerThread thread=new ServerThread(connection,this);
-                    list.add(thread);
-                    pool.submit(thread);
+                    Socket connection = server.accept();    //this blocks so cancel is meaningless!
+                    ServerThread thread = new ServerThread(connection, this);
+                    synchronized (this) {
+                        list.add(thread);   //at the same time some thread may call sendAll and cause ConcurrentModificationException
+                    }
+                    pool.execute(thread);
                 } catch (IOException e) {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println(e);
         }
-        pool.shutdown();
-        boolean isTerminated = false;
-        try {
-            isTerminated = pool.awaitTermination(250, TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
-        }
-        if (!isTerminated)
-            System.out.println("Some task were not terminated!");
+//        pool.shutdown();
+//        boolean isTerminated = false;
+//        try {
+//            isTerminated = pool.awaitTermination(250, TimeUnit.MILLISECONDS);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//        if (!isTerminated)
+//            System.out.println("Some task were not terminated!");
+//        System.out.println("exit serverstart");
     }
 }
