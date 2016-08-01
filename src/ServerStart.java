@@ -1,10 +1,7 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -13,15 +10,17 @@ import java.util.concurrent.TimeUnit;
 public class ServerStart extends Thread {
     private int port;
     private int onlineNum = 0;
+    private DbConnection dbConn = null;
 
-    private List<ServerThread> list = new ArrayList<>();
+    private Set<ServerThread> list = new HashSet<>();
     private Map<String, String> map = new HashMap<>();
 
+    public DbConnection getDBcon(){return dbConn;}
     public ServerStart(int port) {
         this.port = port;
     }
 
-    public int getOnlineNum() {
+    public synchronized int getOnlineNum() {
         return onlineNum;
     }
 
@@ -29,37 +28,48 @@ public class ServerStart extends Thread {
         return map;
     }
 
-    public synchronized void login(String name, String date) {
+    public synchronized void login(ServerThread thread) {
         onlineNum++;
-        map.put(name, date);
+        list.add(thread);
+        //map.put(name, date);
     }
 
-    public synchronized void logout(String name) {
+    public synchronized void logout(ServerThread thread) {
         onlineNum--;
-        map.remove(name);
+        list.remove(thread);
+        //map.remove(name);
     }
 
     public synchronized void sendAll(String data) {
-        for (ServerThread serverThread : list)
-            serverThread.sendInfo(data);
+        for (ServerThread serverThread : list) {
+            if (serverThread.statusInfo())
+                serverThread.sendInfo(data);
+        }
     }
 
     public void run() {
+        dbConn = new DbConnection();
+        try {
+            dbConn.openConn();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         ExecutorService pool = Executors.newCachedThreadPool();
         try (ServerSocket server = new ServerSocket(port)) {
             while (true) {
                 try {
                     Socket connection = server.accept();    //this blocks so cancel is meaningless!
                     ServerThread thread = new ServerThread(connection, this);
-                    synchronized (this) {
-                        list.add(thread);   //at the same time some thread may call sendAll and cause ConcurrentModificationException
-                    }
+//                    synchronized (this) {   //terrible ! tread haven't run!
+//                        list.add(thread);   //at the same time some thread may call sendAll and cause ConcurrentModificationException
+//                    }
                     pool.execute(thread);
-                } catch (IOException e) {
+                } catch (Exception e) {
+                    System.out.println(e+" ServerStart while");
                 }
             }
         } catch (IOException e) {
-            System.out.println(e);
+            System.out.println(e+" ServerStart run");
         }
 //        pool.shutdown();
 //        boolean isTerminated = false;

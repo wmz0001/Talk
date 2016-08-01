@@ -19,7 +19,8 @@ public class Client implements Runnable {
         try (Socket socket = new Socket(host, port)) {
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-            Thread thread=new Thread() {
+            login(name, password);
+            Thread thread = new Thread() {
                 public void run() {
                     try {
                         while (true) {
@@ -28,22 +29,23 @@ public class Client implements Runnable {
                             //System.out.println("window " + id + ":" + str);
                         }
                     } catch (Exception e) {
+                        //System.out.println(e+" read run");
                     }
-                    System.out.println("exiting read thread "+id);
+                    System.out.println("exit read thread " + id);
                 }
             };
-            thread.setDaemon(true);
+            //thread.setDaemon(true);
             thread.start();
-            login(name, password);
             while (true) {
                 out.write("Message is from\t" + name + "\t" + id + "\r\n");
                 out.flush();
                 TimeUnit.SECONDS.sleep(1);
             }
         } catch (Exception e) {
+            //System.out.println(e+" write run");
         }
-        System.out.println("exit write "+id);
-        //System.exit(0);         //the thread cannot stop without this sentence.
+        System.out.println("exit write thread" + id);
+        //System.exit(0);         //the thread cannot stop without this sentence.|pool.shutdown is ok.
     }
 
     public Client(String name) {
@@ -63,7 +65,7 @@ public class Client implements Runnable {
     }
 
     public static void main(String arg[]) {
-        int N = 150;
+        int N = 800;
         ExecutorService pool = Executors.newFixedThreadPool(N);
         for (int i = 0; i < N; i++) {
             String str;
@@ -72,6 +74,6 @@ public class Client implements Runnable {
             else str = "wmz0001";
             pool.execute(new Client(str));
         }
-        System.out.println("exit main");
+        pool.shutdown();    //the thread cannot stop without this sentence.
     }
 }

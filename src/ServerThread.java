@@ -5,39 +5,40 @@ import java.util.concurrent.Callable;
 
 public class ServerThread implements Runnable {
     private int threadId;
+    private DbConnection dbConn;
     private Socket socket;
     private ServerStart serverStart;
-    private DbConnection dbConn = null;
     private BufferedReader in = null;
     private Writer out = null;
     private String user = null;
-    private boolean logState = false;
+    private volatile boolean logStatus = false;
 
+    public boolean statusInfo(){return logStatus;}
     public ServerThread(Socket socket, ServerStart serverStart) {
         this.serverStart = serverStart;
         this.socket = socket;
-        dbConn = new DbConnection();
-        try {
-            dbConn.openConn();
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        dbConn = serverStart.getDBcon();
     }
 
     public void sendInfo(String data) {
         try {
-            out.write(data);
+            out.write(data+"\r\n");
             out.flush();
         } catch (Exception e) {
+            System.out.println(e+" sendInfo");
         }
     }
 
     public void run() {
         try {
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             while (true) {
-                String str = in.readLine();
+                String str = in.readLine(); //this will throw exception?
+                if(str==null){
+                    System.out.println("thread break of read");   //never run to this because exception throws
+                    break;                                        //why is it different with client?
+                }                                            //still need because it may happen if has buffered input?
                 switch (str) {
                     case "registerNewUser": {
                         //System.out.println("get request!");
@@ -54,15 +55,14 @@ public class ServerThread implements Runnable {
                     }
                     default: {
                         //System.out.println(threadId+'\t'+user+socket+str);
-                        serverStart.sendAll(str + "\r\n");
+                        serverStart.sendAll(str);
                     }
                 }
             }
-        } catch (IOException e) {
-        } finally {
+        } catch (Exception e) {
             logout();
-            dbConn.close();
             System.out.println("exit thread" + threadId);
+            //System.out.println(e+" ServerThread run");
         }
     }
 
@@ -89,20 +89,22 @@ public class ServerThread implements Runnable {
             out.write(res + " login\r\n");
             out.flush();
             if (res) {
-                logState = true;
+                logStatus = true;
                 user = userName;
-                String date = new Date().toString();
-                serverStart.login(userName, date);
-                threadId = serverStart.getOnlineNum();
+                //String date = new Date().toString();
+                synchronized (serverStart) {              //the two steps must be together otherwise same id occurs
+                    serverStart.login(this);
+                    threadId = serverStart.getOnlineNum();
+                }
                 System.out.println("login " + threadId);
             }
         } catch (Exception e) {
-            System.out.println(e);
+            System.out.println(e+" login");
         }
     }
 
-    private void logout() {
-        logState = false;
-        serverStart.logout(user);
+    public void logout() {
+        logStatus = false;
+        serverStart.logout(this);
     }
 }
