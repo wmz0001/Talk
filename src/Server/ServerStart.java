@@ -1,21 +1,30 @@
+package Server;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 
 public class ServerStart extends Thread {
     private int port;
-    private int onlineNum = 0;
-    private DbConnection dbConn = null;
+    private int onlineNum;
+    private DbConnection dbConn;
+    private ServerDispatch dispatcher;
 
-    private Set<ServerThread> list = new HashSet<>();
     private Map<String, String> map = new HashMap<>();
 
-    public DbConnection getDBcon(){return dbConn;}
+    public DbConnection getDbConn() {
+        return dbConn;
+    }
+    public String getInfo(){
+        int disCnt=dispatcher.waitMs();
+        int totalCnt=dispatcher.totalWaitMs();
+       return "Dispatcher waiting: "+disCnt+"\n"+"num: "+onlineNum
+               +"\ttotal waiting: "+totalCnt;
+    }
     public ServerStart(int port) {
         this.port = port;
     }
@@ -30,22 +39,22 @@ public class ServerStart extends Thread {
 
     public synchronized void login(ServerThread thread) {
         onlineNum++;
-        list.add(thread);
+        dispatcher.addClient(thread.getClientWriter());
+        //list.add(thread);
         //map.put(name, date);
     }
 
     public synchronized void logout(ServerThread thread) {
         onlineNum--;
-        list.remove(thread);
+        dispatcher.delClient(thread.getClientWriter());
+        //list.remove(thread);
         //map.remove(name);
     }
 
-    public synchronized void sendAll(String data) {
-        for (ServerThread serverThread : list) {
-            if (serverThread.statusInfo())
-                serverThread.sendInfo(data);
-        }
+    public void sendAll(String str) {
+        dispatcher.addMessage(str);
     }
+
 
     public void run() {
         dbConn = new DbConnection();
@@ -54,6 +63,9 @@ public class ServerStart extends Thread {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        dispatcher = new ServerDispatch();
+        dispatcher.setDaemon(true);
+        dispatcher.start();
         ExecutorService pool = Executors.newCachedThreadPool();
         try (ServerSocket server = new ServerSocket(port)) {
             while (true) {
@@ -65,11 +77,11 @@ public class ServerStart extends Thread {
 //                    }
                     pool.execute(thread);
                 } catch (Exception e) {
-                    System.out.println(e+" ServerStart while");
+                    System.out.println(e + " ServerStart while");
                 }
             }
         } catch (IOException e) {
-            System.out.println(e+" ServerStart run");
+            System.out.println(e + " ServerStart run");
         }
 //        pool.shutdown();
 //        boolean isTerminated = false;

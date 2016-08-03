@@ -1,3 +1,5 @@
+package Client;
+
 import java.io.*;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
@@ -12,6 +14,8 @@ public class Client implements Runnable {
     int port = 5026;
     private String name;
     private String password = "enter1206";
+    static final int msTime=5;
+    static final int N=200;
     Writer out;
     BufferedReader in;
 
@@ -36,10 +40,14 @@ public class Client implements Runnable {
             };
             //thread.setDaemon(true);
             thread.start();
+            int messageNum = 0;
             while (true) {
-                out.write("Message is from\t" + name + "\t" + id + "\r\n");
+                messageNum++;
+                String str = "Message " + messageNum + " is from\t" + name + " " + id + "\r\n";
+                out.write(str);
                 out.flush();
-                TimeUnit.SECONDS.sleep(1);
+                //System.out.println(str);
+                TimeUnit.SECONDS.sleep(msTime);
             }
         } catch (Exception e) {
             //System.out.println(e+" write run");
@@ -65,14 +73,14 @@ public class Client implements Runnable {
     }
 
     public static void main(String arg[]) {
-        int N = 800;
+        int timeSleep=msTime*1000/N;
         ExecutorService pool = Executors.newFixedThreadPool(N);
         for (int i = 0; i < N; i++) {
-            String str;
-            if ((i & 1) == 1)
-                str = "wmz";
-            else str = "wmz0001";
+            String str = "wmz";
             pool.execute(new Client(str));
+            try {
+                TimeUnit.MILLISECONDS.sleep(timeSleep);
+            }catch (Exception e){}
         }
         pool.shutdown();    //the thread cannot stop without this sentence.
     }
