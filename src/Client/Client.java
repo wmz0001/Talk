@@ -10,12 +10,12 @@ import java.util.concurrent.TimeUnit;
 public class Client implements Runnable {
     static int num = 0;
     private int id;
-    private String host = "fe80::46dd:29b3:a7d9:e4c4";
+    private String host = "fe80::eeaf:8f10:a841:a3a6";
     int port = 5026;
     private String name;
     private String password = "enter1206";
-    static final int msTime=5;
-    static final int N=200;
+    static final int msTime = 60;
+    static final int N = 6000;
     Writer out;
     BufferedReader in;
 
@@ -73,14 +73,15 @@ public class Client implements Runnable {
     }
 
     public static void main(String arg[]) {
-        int timeSleep=msTime*1000/N;
+        int timeSleep = msTime * 1000 / N;
         ExecutorService pool = Executors.newFixedThreadPool(N);
         for (int i = 0; i < N; i++) {
             String str = "wmz";
             pool.execute(new Client(str));
             try {
                 TimeUnit.MILLISECONDS.sleep(timeSleep);
-            }catch (Exception e){}
+            } catch (Exception e) {
+            }
         }
         pool.shutdown();    //the thread cannot stop without this sentence.
     }

@@ -19,12 +19,14 @@ public class ServerStart extends Thread {
     public DbConnection getDbConn() {
         return dbConn;
     }
-    public String getInfo(){
-        int disCnt=dispatcher.waitMs();
-        int totalCnt=dispatcher.totalWaitMs();
-       return "Dispatcher waiting: "+disCnt+"\n"+"num: "+onlineNum
-               +"\ttotal waiting: "+totalCnt;
+
+    public String getInfo() {
+        int disCnt = dispatcher.waitMs();
+        int totalCnt = dispatcher.totalWaitMs();
+        return "Dispatcher waiting: " + disCnt + "\n" + "num: " + onlineNum
+                + "\ttotal waiting: " + totalCnt;
     }
+
     public ServerStart(int port) {
         this.port = port;
     }
